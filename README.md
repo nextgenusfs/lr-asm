@@ -21,6 +21,6 @@ $ python -m pip install "medaka==1.2.4"
 ```
 #### Running the assembly script
 ```
-$ assemble.sh ont-reads.fastq.gz basename
+$ assemble.sh -f ont-reads.fastq.gz -o basename
 ```
 
