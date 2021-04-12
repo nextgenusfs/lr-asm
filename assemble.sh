@@ -16,21 +16,92 @@ run() {
     eval $@
 }
 
-# script to assemble ONT data
-if [ -z "$2" ]; then
-    echo "Usage: assemble.sh input-ont-reads.fastq.gz output-basename"
-    exit 1
-fi
-
-# set some variables you will use later
-FASTQ=$1
+# set some default variables you will use later
 COV=100
 MINLEN=5000
 THREADS=4
 SIZE=30400000
 TMPDIR=$(uuidgen)
-ASSEMBLY="$2.raven.racon.medaka.fasta"
-SCRUBB="$2.reads-scrubbed.fastq.gz"
+
+# parse command line options
+while (( "$#" )); do
+  case "$1" in
+    -f|--fastq)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        FASTQ=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -o|--output)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        OUT=$2
+        shift 2
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -c|--coverage)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        COV=$2
+        shift 2
+      fi
+      ;;
+    -m|--minlen)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        MINLEN=$2
+        shift 2
+      fi
+      ;;
+    -t|--threads)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        THREADS=$2
+        shift 2
+      fi
+      ;;
+    -g|--genomesize)
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        SIZE=$2
+        shift 2
+      fi
+      ;;
+    -*|--*=) # unsupported flags
+      echo "Error: Unsupported flag $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# script to assemble ONT data
+if [ -z "$FASTQ" ]; then
+    echo "Usage: assemble.sh -f input-ont-reads.fastq.gz -o output-basename"
+    echo " [optional arguments]"
+    echo "    -t, --threads     Number of threads to use. Default: 4"
+    echo "    -m, --minlen      Minumum read length. Default: 5000"
+    echo "    -g, --genomesize  Estimated genome size. Default: 30400000"
+    echo "    -c, --coverage    Coverage to use for assembly. Default: 100"
+    exit 1
+fi
+
+if [ -z "$OUT" ]; then
+    echo "Usage: assemble.sh -f input-ont-reads.fastq.gz -o output-basename"
+    echo " [optional arguments]"
+    echo "    -t, --threads     Number of threads to use. Default: 4"
+    echo "    -m, --minlen      Minumum read length. Default: 5000"
+    echo "    -g, --genomesize  Estimated genome size. Default: 30400000"
+    echo "    -c, --coverage    Coverage to use for assembly. Default: 100"
+    exit 1
+fi
+
+# tell user what options are
+log "Running lr-asm of ${FASTQ} with -c ${COV} -m ${MINLEN} -g ${SIZE} -t ${THREADS}"
+
+# set the output files
+ASSEMBLY="${OUT}.raven.racon.medaka.fasta"
+SCRUBB="${OUT}.reads-scrubbed.fastq.gz"
 
 # make working dir
 mkdir -p ${TMPDIR}
